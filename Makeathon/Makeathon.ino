@@ -9,28 +9,36 @@
 #error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
 #endif
 
-#define W 3
 #define H 6
-
-// 2-dimensional array of row pin numbers: TODO: CHANGE THESE
-const int row[W] = { 3, 16, 17 };
-
-// 2-dimensional array of column pin numbers:
-const int col[H] = { 21 ,22, 23, 24, 25, 26 };
+#define W 3
 
 int pixels[H][W];
 
-void ClearPixels(){
-  for (int x = 0; x < H; x++) {
-    for (int y = 0; y < W; y++) {
-      pixels[x][y] = LOW;
-    }
+// 2-dimensional array of row pin numbers:
+const int row[W] = { 0, 1, 2 };
+
+// 2-dimensional array of column pin numbers:
+const int col[H] = { 3 ,4, 5, 6, 7, 8 };
+
+for (int thisPin = 0; thisPin < 3; thisPin++) {
+  // initialize the output pins:
+  pinMode(col[thisPin], OUTPUT);
+  pinMode(row[thisPin], OUTPUT);
+  digitalWrite(col[thisPin], LOW);
+  digitalWrite(row[thisPin], LOW);
+  // take the col pins (i.e. the cathodes) high to ensure that the LEDS are off:
+}
+
+// initialize the pixel matrix:
+for (int x = 0; x < 3; x++) {
+  for (int y = 0; y < 3; y++) {
+    pixels[x][y] = LOW;
   }
 }
 
 #define V 18 //define number of vertices in graph
 #define X 3 //x width
-#define Y 3 //y height
+#define Y 6 //y height
 
 #define L0 1 //Pin light 0 TODO: change pin numbers 
 #define L1 2 //Pin light 1
@@ -47,10 +55,10 @@ void ClearPixels(){
 
 BluetoothSerial SerialBT;
 
-int source = 16; // start at bottom middle of factory
-int latestDestination = 16;
+int flag = 0;
+int num = 2 ;
 
-IntVector adj[V]; //18
+IntVector adj[V]; //12
 
 void add_edge(IntVector adj[], int src, int dest) 
 { 
@@ -59,18 +67,7 @@ void add_edge(IntVector adj[], int src, int dest)
 } 
 
 void setup() {
-    for (int thisPin = 0; thisPin < 3; thisPin++) {
-      // initialize the output pins:
-      pinMode(col[thisPin], OUTPUT);
-      pinMode(row[thisPin], OUTPUT);
-      digitalWrite(col[thisPin], LOW);
-      digitalWrite(row[thisPin], LOW);
-      // take the col pins (i.e. the cathodes) high to ensure that the LEDS are off:
-    }
 
-    // initialize the pixel matrix:
-    ClearPixels();
-    
     add_edge(adj, 0, 1);
     add_edge(adj, 0, 3);
     add_edge(adj, 1, 2);
@@ -94,7 +91,6 @@ void setup() {
     add_edge(adj, 16, 17);
 
     int leds[V] = {L0, L1, L2, L3, L4, L5, L6, L7, L8, L9, L10, L11};
-//      int leds[V] = {L0, L1, L2, L3, L4, L5, L6, L7, L8};
 
 
     //TODO - define bluetooth stuff
@@ -108,25 +104,18 @@ void setup() {
 void loop() {
   if (SerialBT.available() > 0) {
     char in = SerialBT.read();
-    if(in == 'z'){
-      Serial.println("Setting Source");
-      source = latestDestination;
-    } else {
-      int val = in - 'a';
-      Serial.println(val);
-      printPath(adj, source, val, V);
-      latestDestination = val;
-    }
+    int val = in - 'a';
+    Serial.println(val);
+    printPath(adj, 0, val, V);
   }
 
   refreshScreen(); 
 }
 
 void LightUpSolution(int shortestPath[V], int leds[V]){
-//  for(int i = 0; i < V; i++){
-//    digitalWrite(leds[i], shortestPath[i]);
-//  }
-
+  for(int i = 0; i < V; i++){
+    digitalWrite(leds[i], shortestPath[i]);
+  }
 }
   
 // A utility function to find the vertex with minimum distance value, from 
@@ -211,36 +200,20 @@ void printPath(IntVector adj[], int s, int dest, int v){
 
   IntVector test;
   test.vecPushOn(1);
-  ClearPixels();
-  for (int i = path.getVectorSize() - 1; i >= 0; i--){
-    int pin = path.vectorGet(i);
-    // TODO, make sure dis ain't fucked (inc that stuff you dropped)
-    pixels[pin/W][pin%W] = HIGH;
-    Serial.print(pin);
-    Serial.print(", ");
-  }
-  printPixels();
-}
 
-void printPixels(){
-  Serial.println("-+-+-");
-  for(int i = 0; i < H; i++){
-    for(int j = 0; j < W; j++){
-      Serial.print(pixels[i][j]);
-      Serial.print("|");  
-    }
-    Serial.println("");
+  for (int i = path.getVectorSize() - 1; i >= 0; i--){
+    Serial.print(path.vectorGet(i));
+    Serial.print(", ");
   }
 }
 
 void refreshScreen(){
   for(int i = 0; i < H; i++){ //go through vertical LED'S
-    digitalWrite(col[i], HIGH);//toggle value
+    digitalWrite(row[i], LOW);//toggle value
     for(int j = 0; j < W; j++){
-      digitalWrite(row[j], !pixels[i][j]);
+      digitalWrite(col[j], pixels[i][j]);
     }
     delay(1);
-    digitalWrite(col[i], LOW);
+    digitalWrite(col[i], HIGH);
   }
-//  Serial.println("Done.");
 }
