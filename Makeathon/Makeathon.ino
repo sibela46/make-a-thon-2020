@@ -9,6 +9,28 @@
 #error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
 #endif
 
+// 2-dimensional array of row pin numbers: TODO: CHANGE THESE
+const int row[W] = { 3, 4, 5 };
+
+// 2-dimensional array of column pin numbers:
+const int col[H] = { 8 ,9, 10 };
+
+for (int thisPin = 0; thisPin < 3; thisPin++) {
+  // initialize the output pins:
+  pinMode(col[thisPin], OUTPUT);
+  pinMode(row[thisPin], OUTPUT);
+  digitalWrite(col[thisPin], LOW);
+  digitalWrite(row[thisPin], LOW);
+  // take the col pins (i.e. the cathodes) high to ensure that the LEDS are off:
+}
+
+// initialize the pixel matrix:
+for (int x = 0; x < 3; x++) {
+  for (int y = 0; y < 3; y++) {
+    pixels[x][y] = LOW;
+  }
+}
+
 #define V 18 //define number of vertices in graph
 #define X 3 //x width
 #define Y 6 //y height
@@ -80,21 +102,9 @@ void loop() {
     int val = in - 'a';
     Serial.println(val);
     printPath(adj, 0, val, V);
-    delay(1000);
   }
- 
-/**
-  //a thing
-  if(getting bluetooth command){
-    if(valid message){
-      src = ?? //unpack message
-      dest = ??  
-  
-      dijkstra(); 
-    }
-  }
-  **/
-  
+
+  refreshScreen(); 
 }
 
 void LightUpSolution(int shortestPath[V], int leds[V]){
@@ -190,4 +200,16 @@ void printPath(IntVector adj[], int s, int dest, int v){
     Serial.print(path.vectorGet(i));
     Serial.print(", ");
   }
+}
+
+void refreshScreen(){
+  for(int i = 0; i < H; i++){ //go through vertical LED'S
+    digitalWrite(col[i], HIGH);//toggle value
+    for(int j = 0; j < W; j++){
+      digitalWrite(row[j], !pixels[i][j]);
+    }
+    delay(1);
+    digitalWrite(col[i], LOW);
+  }
+  Serial.println("Done.");
 }
