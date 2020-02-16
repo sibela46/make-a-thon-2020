@@ -3,9 +3,15 @@
 #include "newvector.h"
 #include "newqueue.h"
 
-#define V 12 //define number of vertices in graph
+#include "BluetoothSerial.h"
+
+#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
+#error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
+#endif
+
+#define V 18 //define number of vertices in graph
 #define X 3 //x width
-#define Y 4 //y height
+#define Y 6 //y height
 
 #define L0 1 //Pin light 0 TODO: change pin numbers 
 #define L1 2 //Pin light 1
@@ -19,6 +25,11 @@
 #define L9 4
 #define L10 4
 #define L11 4
+
+BluetoothSerial SerialBT;
+
+int flag = 0;
+int num = 2 ;
 
 IntVector adj[V]; //12
 
@@ -35,29 +46,43 @@ void setup() {
     add_edge(adj, 1, 2);
     add_edge(adj, 1, 4);
     add_edge(adj, 2, 5);
+    add_edge(adj, 3, 4);
     add_edge(adj, 3, 6);
     add_edge(adj, 4, 7);
-    add_edge(adj, 5, 8);
-    add_edge(adj, 6, 7);
+    add_edge(adj, 6, 9);
     add_edge(adj, 7, 8);
     add_edge(adj, 7, 10);
     add_edge(adj, 8, 11);
-    add_edge(adj, 9, 10);
-    add_edge(adj, 10, 11);
+    add_edge(adj, 9, 12);
+    add_edge(adj, 10, 13);
+    add_edge(adj, 11, 14);
+    add_edge(adj, 12, 13);
+    add_edge(adj, 12, 15);
+    add_edge(adj, 13, 16);
+    add_edge(adj, 14, 17);
+    add_edge(adj, 15, 16);
+    add_edge(adj, 16, 17);
 
     int leds[V] = {L0, L1, L2, L3, L4, L5, L6, L7, L8, L9, L10, L11};
 
 
     //TODO - define bluetooth stuff
 
-    Serial.begin(9600);
+    Serial.begin(115200);
+    SerialBT.begin("ESP32test"); //Bluetooth device name
     delay(2000);
     Serial.println("***RESET***");
 }
 
 void loop() {
-  printPath(adj, 0, 5, V);
-  delay(10000);
+  if (SerialBT.available() > 0) {
+    char in = SerialBT.read();
+    int val = in - 'a';
+    Serial.println(val);
+    printPath(adj, 0, val, V);
+    delay(1000);
+  }
+ 
 /**
   //a thing
   if(getting bluetooth command){
@@ -101,7 +126,6 @@ int printSolution(int dist[])
 } 
 
 bool BFS(IntVector adj[], int src, int dest, int v, int pred[], int dist[]){
-  Serial.println("BFS");
   // a queue to maintain queue of vertices whose 
   // adjacency list is to be scanned as per normal 
   // DFS algorithm 
@@ -151,7 +175,6 @@ void printPath(IntVector adj[], int s, int dest, int v){
   int pred[v];
   int dist[v]; 
   BFS(adj, s, dest, v, pred, dist);
-  Serial.println("OUTTA BFS");
   IntVector path;
   int crawl = dest; 
   path.vecPushOn(crawl); 
@@ -160,12 +183,9 @@ void printPath(IntVector adj[], int s, int dest, int v){
     crawl = pred[crawl]; 
   }
 
-  Serial.println(path.getVectorSize());
-
   IntVector test;
   test.vecPushOn(1);
 
-  Serial.println(test.getVectorSize());
   for (int i = path.getVectorSize() - 1; i >= 0; i--){
     Serial.print(path.vectorGet(i));
     Serial.print(", ");
